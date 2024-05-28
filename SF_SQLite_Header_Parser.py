@@ -14,10 +14,10 @@
 #MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #GNU General Public License for more details.
 #
-#You view the GNU General Public License at <https://www.gnu.org/licenses/>.
+#You can view the GNU General Public License at <https://www.gnu.org/licenses/>.
 #
 # Version History:
-# v1.0 2024-05-23
+# v1.0 2024-05-28
 
 import argparse
 import os
