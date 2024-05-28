@@ -14,7 +14,7 @@
 #MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #GNU General Public License for more details.
 #
-#You view the GNU General Public License at <https://www.gnu.org/licenses/>.
+#You can view the GNU General Public License at <https://www.gnu.org/licenses/>.
 #
 # Version History:
 # v1.0 2024-05-28
@@ -257,7 +257,7 @@ Website: www.spyderforensics.com
         logger.error(f"Error: Unable to open the specified file '{db_file}'")
 
 tool_name = "Tool Name: SQLite Page Infromation Extractor"
-description = "Description: This python script developed by Spyder Forensics LLC extracts information about all pages in a SQLite Main Database File "
+description = "Description: This python script developed by Spyder Forensics LLC extracts information about all pages in an SQLite Main Database File "
 Usage = "Usage Example: SF_Page_Info_Parser.py -i C:\\Evidence\\mmssms.db -o C:\\Reports\\mmssms_sqlitepageinfo.txt"
 
 parser = argparse.ArgumentParser(description=f"{tool_name}\n{description}\n", epilog=Usage, formatter_class=argparse.RawDescriptionHelpFormatter)
