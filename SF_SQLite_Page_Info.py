@@ -1,3 +1,24 @@
+#This python script extracts information about each page in an 
+#SQLite Main database file and can export the information into a CSV file
+#
+#
+#Copyright(C) 2024 Spyder Forensics LLC (www.spyderforensics.com)
+#
+#This program is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You view the GNU General Public License at <https://www.gnu.org/licenses/>.
+#
+# Version History:
+# v1.0 2024-05-28
+
 import argparse
 import os
 import struct
