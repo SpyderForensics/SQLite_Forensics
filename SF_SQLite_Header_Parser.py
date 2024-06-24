@@ -20,7 +20,7 @@
 # v1.0 2024-05-23
 # v1.1 2024-06-24
 #   -Shortened the width of the pretty table columns to display better on lower resolution screens
-#   -fixed an issue with CSV writer where the there was no escape character set
+#   -Fixed an issue with CSV writer where there was no escape character set
 
 import argparse
 import os
