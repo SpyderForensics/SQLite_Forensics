@@ -14,10 +14,13 @@
 #MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #GNU General Public License for more details.
 #
-#You can view the GNU General Public License at <https://www.gnu.org/licenses/>.
+#You view the GNU General Public License at <https://www.gnu.org/licenses/>.
 #
 # Version History:
-# v1.0 2024-05-28
+# v1.0 2024-05-23
+# v1.1 2024-06-24
+#   -Shortened the width of the pretty table columns to display better on lower resolution screens
+#   -fixed an issue with CSV writer where the there was no escape character set
 
 import argparse
 import os
@@ -46,6 +49,7 @@ def parse_header(db_file, output_file=None):
             #checks if the input file is a valid SQLite database 
             if magic_string != b'SQLite format 3\x00':
                 print(f"Error: '{db_file}' is not a valid SQLite database file.")
+                logger.error(f"Error: '{db_file}' is not a valid SQLite database file.")
                 return
 				
             # Reset file pointer to the beginning of the file
@@ -130,14 +134,14 @@ Website: www.spyderforensics.com
             for row in table._rows:
                 for i in range(4, 6):
                     if len(row) > i:
-                        row[i] = textwrap.fill(row[i], width=60)
+                        row[i] = textwrap.fill(row[i], width=40)
 
             print(table)
             #If the -o switch is used the information from the pretty table is exported to a csv file. The pretty table formatting is ignored
             if output_file:
                 output_path = os.path.abspath(output_file)
                 with open(output_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
-                    writer = csv.writer(csvfile)
+                    writer = csv.writer(csvfile, escapechar='\\', quoting=csv.QUOTE_MINIMAL)
                     writer.writerow(['Header Entry', 'Value', 'File Offset', 'Length', 'Description', 'Examiner Tip'])
                     for row in rows_without_wrapping:
                         writer.writerow(row)
@@ -157,7 +161,7 @@ description = "Description: This python script developed by Spyder Forensics LLC
 Usage = "Usage Example: SF_SQLite_Header_Parser.py -i C:\Evidence\mmssms.db -o C:\Reports\mmssms_sqliteheaderinfo.csv."
 
 parser = argparse.ArgumentParser(description=f"{tool_name}\n{description}\n", epilog=Usage, formatter_class=argparse.RawDescriptionHelpFormatter)
-parser.add_argument('-i', dest='db_file', metavar='file_path', required=True, help='Enter the Path to SQLite Main Database File')
+parser.add_argument('-i', dest='db_file', metavar='file_path', required=True, help='Enter the path to SQLite Main Database File')
 parser.add_argument('-o', dest='output_file', metavar='output_file', help='Specify the location to output the CSV file including name')
 args = parser.parse_args()
 
