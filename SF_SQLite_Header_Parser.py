@@ -116,13 +116,13 @@ Website: www.spyderforensics.com
             table.add_row(['Database Size', database_size, '28-31', '4', 'Database size in pages',''],divider=True)
             table.add_row(['First Freelist Trunk Page', first_freelist_trunk_page, '32-35', '4', 'Page number of the first freelist trunk page','The Trunk Page contains a listing of freelist pages'],divider=True)
             table.add_row(['Number of Freelist Pages', number_of_freelist_pages, '36-39', '4', 'Total number of freelist pages','This value includes the Freelist Trunk Pages'],divider=True)
-            table.add_row(['Schema Cookie', schema_cookie, '40-43', '4', 'Integer that increments when there is a database schema change',r"A change in the database schema indicates that the app developer changed someting in the database construction which can often cause parsers to break"],divider=True)
+            table.add_row(['Schema Cookie', schema_cookie, '40-43', '4', 'Integer that increments when there is a database schema change',r"A change in the database schema indicates that the app developer changed something in the database construction which can often cause parsers to break"],divider=True)
             table.add_row(['Schema Format Number', schema_format_number, '44-47', '4', 'The Schema Format Number',''],divider=True)
             table.add_row(['Default Page Cache Size', default_page_cache_size, '48-51', '4', 'Default page cache size',''],divider=True)
             table.add_row(['Auto Vacuum', auto_vacuum, '52-55', '4', 'If the value is a non-zero value auto-vacuum is enabled and the value signifies the largest root B-Tree page','If auto-vacuum is enabled there will be no Freelist Pages!'],divider=True)
             table.add_row(['Text Encoding', text_encoding, '56', '4', 'Encoding used for text strings',''],divider=True)
             table.add_row(['User Version', user_version, '60-63', '4', 'User Version Number',''],divider=True)
-            table.add_row(['Incremental Vacuum Mode', incremental_vacuum_mode, '64-67', '4', 'If the value is a non-zero value incremental-vacuum is enabled','There maybe some freelist pages'],divider=True)
+            table.add_row(['Incremental Vacuum Mode', incremental_vacuum_mode, '64-67', '4', 'If the value is a non-zero value incremental-vacuum is enabled','There could still be some freelist pages!'],divider=True)
             table.add_row(['Application ID', application_id, '68-71', '4', 'Application ID',''],divider=True)
             table.add_row(['Unused Bytes', '20 unused bytes', '88-91', '4', 'Unused bytes reserved for future use',''],divider=True)
             table.add_row(['Version Valid For', version_valid_for, '92-95', '4', 'Version Valid For',''],divider=True)
@@ -169,5 +169,4 @@ args = parser.parse_args()
 
 logger = setup_logger(f"{os.path.splitext(args.output_file)[0]}.log") if args.output_file else setup_logger("Spyder_SQLiteHeaderParser.log")
 parse_header(args.db_file, args.output_file)
-
 
