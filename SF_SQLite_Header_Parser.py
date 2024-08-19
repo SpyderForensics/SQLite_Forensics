@@ -21,6 +21,8 @@
 # v1.1 2024-06-24
 #   -Shortened the width of the pretty table columns to display better on lower resolution screens
 #   -Fixed an issue with CSV writer where there was no escape character set
+#v1.2 2024-08-19
+#   -Fixed a syntax warning on the help page due to the \ in the folder paths being interpreted as escape characters
 
 import argparse
 import os
@@ -158,7 +160,7 @@ Website: www.spyderforensics.com
         logger.error(f"Error: Unable to open the specified file '{db_file}'")
 tool_name = "Tool Name: SQLite Main Database File Header Parser"
 description = "Description: This python script developed by Spyder Forensics LLC extracts and interprets all the informational entries from an SQLite Main Database File header"
-Usage = "Usage Example: SF_SQLite_Header_Parser.py -i C:\Evidence\mmssms.db -o C:\Reports\mmssms_sqliteheaderinfo.csv."
+Usage = "Usage Example: SF_SQLite_Header_Parser.py -i C:\\Evidence\\mmssms.db -o C:\\Reports\\mmssms_sqliteheaderinfo.csv."
 
 parser = argparse.ArgumentParser(description=f"{tool_name}\n{description}\n", epilog=Usage, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('-i', dest='db_file', metavar='file_path', required=True, help='Enter the path to SQLite Main Database File')
