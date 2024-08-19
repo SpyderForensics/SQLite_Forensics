@@ -21,7 +21,7 @@
 # v1.1 2024-06-24
 #   -Shortened the width of the pretty table columns to display better on lower resolution screens
 #   -Fixed an issue with CSV writer where there was no escape character set
-#v1.2 2024-08-19
+# v1.2 2024-08-19
 #   -Fixed a syntax warning on the help page due to the \ in the folder paths being interpreted as escape characters
 
 import argparse
@@ -96,7 +96,7 @@ def parse_header(db_file, output_file=None):
         |_|    |___/    
 
 SQLite Main Database File Header Parser
-Version: 1.0 May, 2024
+Version: 1.2 Aug, 2024
 Author: Spyder Forensics Training
 Website: www.spyderforensics.com
 """)
