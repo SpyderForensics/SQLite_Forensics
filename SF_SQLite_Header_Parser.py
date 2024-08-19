@@ -23,6 +23,7 @@
 #   -Fixed an issue with CSV writer where there was no escape character set
 # v1.2 2024-08-19
 #   -Fixed a syntax warning on the help page due to the \ in the folder paths being interpreted as escape characters
+#   -Updated Examiner Tips 
 
 import argparse
 import os
@@ -96,7 +97,7 @@ def parse_header(db_file, output_file=None):
         |_|    |___/    
 
 SQLite Main Database File Header Parser
-Version: 1.2 Aug, 2024
+Version: 1.3 Aug, 2024
 Author: Spyder Forensics Training
 Website: www.spyderforensics.com
 """)
@@ -119,7 +120,7 @@ Website: www.spyderforensics.com
             table.add_row(['Schema Cookie', schema_cookie, '40-43', '4', 'Integer that increments when there is a database schema change',r"A change in the database schema indicates that the app developer changed something in the database construction which can often cause parsers to break"],divider=True)
             table.add_row(['Schema Format Number', schema_format_number, '44-47', '4', 'The Schema Format Number',''],divider=True)
             table.add_row(['Default Page Cache Size', default_page_cache_size, '48-51', '4', 'Default page cache size',''],divider=True)
-            table.add_row(['Auto Vacuum', auto_vacuum, '52-55', '4', 'If the value is a non-zero value auto-vacuum is enabled and the value signifies the largest root B-Tree page','If auto-vacuum is enabled there will be no Freelist Pages!'],divider=True)
+            table.add_row(['Auto Vacuum', auto_vacuum, '52-55', '4', 'If the value is a non-zero value auto-vacuum is enabled and the value signifies the largest root B-Tree page','If auto-vacuum is enabled there will be no Freelist Pages unless incremental vacuum is also enabled'],divider=True)
             table.add_row(['Text Encoding', text_encoding, '56', '4', 'Encoding used for text strings',''],divider=True)
             table.add_row(['User Version', user_version, '60-63', '4', 'User Version Number',''],divider=True)
             table.add_row(['Incremental Vacuum Mode', incremental_vacuum_mode, '64-67', '4', 'If the value is a non-zero value incremental-vacuum is enabled','There could still be some freelist pages!'],divider=True)
