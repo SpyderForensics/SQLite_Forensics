@@ -97,7 +97,7 @@ def parse_header(db_file, output_file=None):
         |_|    |___/    
 
 SQLite Main Database File Header Parser
-Version: 1.3 Aug, 2024
+Version: 1.2 Aug, 2024
 Author: Spyder Forensics Training
 Website: www.spyderforensics.com
 """)
