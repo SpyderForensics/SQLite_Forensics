@@ -49,7 +49,7 @@ Note: Table Assignments from the WAL file should be verfied
 
 Not Currently Supported: 
 
-- Parsing Freelist Pages (Table Leaf Freelist pages will be parsed from Write-Ahead Log)
+- Parsing Freelist Pages
 - Parsing of Index B-trees (WITHOUT ROWID Tables are skipped as they use Index B-trees)
 - Parsing of Pointer Map Pages
 - Recovering Records from Freeblocks and Page Unallocated Space
