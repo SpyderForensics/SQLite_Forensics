@@ -159,7 +159,7 @@ def build_page_table_mapping(db_path, page_size, wal_path, wal_frames, target_pa
 
         page_type = page_data[0]
 
-        # ✅ If the page is an interior page, process child pages
+        # If the page is an interior page, process child pages
         if page_type == TABLEINTERIOR_PAGE_TYPE:
             child_pages = parse_interior_page(page_data, page_size)
             if target_page in child_pages:
