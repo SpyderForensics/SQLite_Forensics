@@ -37,7 +37,7 @@ def write_to_csv(output_file, rows):
 
     # Write to CSV
     with open(output_file, "w", newline="", encoding="utf-8-sig") as csvfile:
-        writer = csv.writer(csvfile)
+        writer = csv.writer(csvfile, escapechar='\\', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(column_headers)
         
         for row in rows:
