@@ -29,7 +29,7 @@ def parse_interior_page(page_data, page_size, is_page_1=False):
     child_pages = []
     for pointer in cell_pointers:
         if pointer < 0 or pointer >= len(page_data):  # Ensure valid pointer
-            #print(f"Invalid cell pointer {pointer}. Skipping.")
+            print(f" [-] Invalid cell pointer {pointer}. Skipping.")
             continue
         cell_data = page_data[pointer:]
         child_page_number = struct.unpack(">I", cell_data[:4])[0]
