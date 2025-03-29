@@ -18,6 +18,7 @@
 # Version History:
 # v alpha 2025-01-09
 # v beta 2025-03-28
+# v beta 2 2025-03-29
 
 
 import os
@@ -42,7 +43,7 @@ def _main(db_file, wal_file, output_folder, search_term):
                                                 ,'`-./_____\,-'`.
 Chomping SQLite Databases One Page at a time        /       \
 
-Version: Beta March, 2025
+Version: Beta 2 - March, 2025
 Author: Spyder Forensics Training
 Website: www.spyderforensics.com
 
