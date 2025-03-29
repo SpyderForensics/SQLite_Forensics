@@ -4,22 +4,24 @@ from Modules.parsesqliteheader import parse_sqlite_header
 
 def clean_row(row):
     """
-    Decodes byte strings with handling for BOM and invalid characters
+    Decodes byte strings with handling for BOM and invalid characters,
+    but preserves raw bytes for potential BLOB columns.
     """
     cleaned_row = []
     for value in row:
         if isinstance(value, bytes):
             try:
-                cleaned_row.append(value.decode("utf-8-sig").replace("\ufeff", "").replace("ï»¿", ""))
+                decoded = value.decode("utf-8-sig").replace("\ufeff", "").replace("ï»¿", "")
+                cleaned_row.append(decoded)
             except UnicodeDecodeError:
-                cleaned_row.append(value.decode("utf-8", errors="replace"))
+                cleaned_row.append(value)
         else:
             cleaned_row.append(value)
     return cleaned_row
 
 def write_to_sqlite(output_file, db_file_path, combined_records, combined_recoveredrecords):
     """
-    Writes extracted records to a SQLite database
+    Writes extracted records to a SQLite database, preserving column types.
     """
     if not combined_records:
         print("\n[!] No Records were Extracted")
@@ -27,12 +29,12 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
 
     print("\n[+] Adding Extracted Records to SQLite Database")
 
-    # Extract table definitions from the schema to recreate target database
     with open(db_file_path, "rb") as db_file:
         header = parse_sqlite_header(db_file)
         page_size = header["page_size"]
         tables = extract_table_definitions_from_schema(db_file, page_size)
 
+    # Use (name, type) pairs for each table
     table_columns = {table["name"]: table["columns"] for table in tables}
 
     conn = sqlite3.connect(output_file)
@@ -50,23 +52,30 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
         if table_name.lower() in sqlite_internal_tables:
             continue  
 
-        column_headers = base_headers + extracted_columns
-        unique_column_headers = [col.strip("'\"") for col in dict.fromkeys(column_headers)]
+        column_headers = base_headers + [col[0] for col in extracted_columns]
+        unique_column_headers = []
+        added = set()
+        for col in column_headers:
+            col_clean = col.strip("'\"")
+            if col_clean not in added:
+                unique_column_headers.append(col_clean)
+                added.add(col_clean)
 
-        # Set Record_ID as PRIMARY KEY
-        column_definitions = ", ".join(
-            ['"Record_ID" INTEGER PRIMARY KEY'] +
-            [f'"{col}" TEXT' for col in unique_column_headers if col != "Record_ID"]
-        )
+        # Set Record_ID as INTEGER PRIMARY KEY
+        column_definitions = ['"Record_ID" INTEGER PRIMARY KEY']
+        for col_name in unique_column_headers:
+            if col_name == "Record_ID":
+                continue
+            # Use actual column type if available
+            col_type = next((ctype for cname, ctype in extracted_columns if cname == col_name), "TEXT")
+            column_definitions.append(f'"{col_name}" {col_type}')
 
-        cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({column_definitions})')
+        cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(column_definitions)})')
 
     conn.commit()
 
-    max_columns = 0
-    for row in combined_records:
-        cleaned_row = clean_row(row)
-        max_columns = max(max_columns, len(cleaned_row) - len(base_headers))
+    # Track max columns for dynamic/freelist/unknown
+    max_columns = max((len(clean_row(row)) - len(base_headers)) for row in combined_records)
 
     dynamic_columns = [f"Column_{i+1}" for i in range(max_columns)]
 
@@ -113,7 +122,7 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
             extracted_columns = table_columns[table_name]
             column_headers = base_headers + extracted_columns
 
-        insert_columns = [col for col in column_headers if col != "Record_ID"]
+        insert_columns = [col[0] if isinstance(col, tuple) else col for col in column_headers if col != "Record_ID"]
         insert_columns = [col.strip("'\"") for col in insert_columns]
 
         expected_column_count = len(insert_columns)
@@ -168,6 +177,7 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
     conn.commit()
     print("[+] Extracted Records succesfully added to SQLite Database")
     conn.close()
+
 
 
 

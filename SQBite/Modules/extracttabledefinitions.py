@@ -7,25 +7,21 @@ from Modules.btreeleafpage_processing import mainparse_leaf_page
 TABLEINTERIOR_PAGE_TYPE = 5
 TABLELEAF_PAGE_TYPE = 13
 
-def extract_column_names_from_sql(sql_statement):
+def extract_columns_and_types_from_sql(sql_statement):
     """
-    Extracts column names from a CREATE TABLE statement, ignoring constraints.
+    Extracts column names and types from table CREATE TABLE statement.
     """
     columns = []
-
     match = re.search(r"CREATE\s+TABLE\s+\S+\s*\((.+)\)", sql_statement, re.S | re.I)
-
+    
     if match:
         column_definitions = match.group(1).split(",")
-
         for col_def in column_definitions:
             col_parts = col_def.strip().split()
-
-            # Ensure valid column name is found
             if col_parts and col_parts[0].lower() not in ("primary", "foreign", "constraint", "unique", "check"):
                 col_name = col_parts[0].strip("`\"[]()")
-                columns.append(col_name)
-
+                col_type = col_parts[1].upper() if len(col_parts) > 1 else "TEXT"
+                columns.append((col_name, col_type))
     return columns
 
 def extract_table_definitions_from_schema(db_file, page_size):
@@ -63,7 +59,7 @@ def extract_table_definitions_from_schema(db_file, page_size):
                     print(f" [!] Skipping table {table_name}, invalid SQL: {repr(sql_statement)}")
                     continue
 
-                columns = list(dict.fromkeys(extract_column_names_from_sql(sql_statement)))
+                columns = list(dict.fromkeys(extract_columns_and_types_from_sql(sql_statement)))
 
                 tables.append({"name": table_name, "columns": columns})
 

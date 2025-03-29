@@ -2,16 +2,16 @@ import struct
 import math
 from Modules.varints import single_varint, multi_varint
 
-def handle_overflow(cell_data, cell_offset, page_size, filesource, initial_payload_length, remaining_bytes):
+def handle_overflow(initial_payload, cell_offset, page_size, filesource, initial_payload_length, remaining_bytes):
     """
     Handles overflow pages for the main SQLite database file only.
     """
-    # Extract the initial payload and the overflow pointer
-    overflow_data = cell_data[:initial_payload_length]  
-    overflow_page_number = struct.unpack(">I", cell_data[initial_payload_length:initial_payload_length + 4])[0]
-    #print(f"	- First Overflow Page: {overflow_page_number}")
 
-    # Continue processing overflow pages until the next pointer is 0 or all remaining bytes are read
+    overflow_data = initial_payload[:-4]
+    overflow_page_number = struct.unpack(">I", initial_payload[-4:])[0]
+    
+    visited_pages = set()
+
     while overflow_page_number != 0 and remaining_bytes > 0:
         overflow_offset = (overflow_page_number - 1) * page_size
         filesource.seek(overflow_offset)
@@ -29,53 +29,59 @@ def handle_overflow(cell_data, cell_offset, page_size, filesource, initial_paylo
 
         # Update the next overflow page number
         overflow_page_number = next_overflow_page_number
-
+    #print(f"Overflow Payload: {overflow_data}")
     return overflow_data
 
 def parse_cell(cell_data, cell_offset, page_size, filesource):
-    """
-    Parses a single SQLite cell in MainDB
-    """
-    # Decode the length of the payload and the row ID
+
     payload_length, offset = single_varint(cell_data)
+    
     row_id, length = single_varint(cell_data[offset:])
     offset += length
 
-    # Read header length and parse column types
-    header_length = cell_data[offset]
-    offset += 1
-    column_types, header_parsed_length = multi_varint(cell_data[offset:offset + header_length - 1])
+    header_length, header_varint_len = single_varint(cell_data[offset:])
+    offset += header_varint_len
+
+    column_types, header_parsed_length = multi_varint(cell_data[offset:offset + header_length - header_varint_len])
     offset += header_parsed_length
 
-    # Calculations for overflow
+    # Overflow calculations
     U = page_size 
     P = payload_length
     X = U - 35
-    M = math.floor(((U - 12) * 32 / 255) - 23)  # Rounded down M
-    K = M + ((P - M) % (U - 4)) 
+    M = math.floor(((U - 12) * 32 / 255) - 23)
+    K = M + ((P - M) % (U - 4))
 
     if P > X and K <= X:
         initial_payload_length = K
         remaining_bytes = P - K
-        adjusted_initial_payload_length = initial_payload_length - header_length
-        initial_payload = cell_data[offset:offset + adjusted_initial_payload_length + 4]
-        cell_data = handle_overflow(initial_payload, cell_offset, page_size, filesource, adjusted_initial_payload_length, remaining_bytes)
+        initial_payload = cell_data[offset : offset + initial_payload_length + 4]
+        cell_data = handle_overflow(initial_payload, cell_offset, page_size, filesource, initial_payload_length, remaining_bytes)
+        offset = 0  
+        #print(f"Overflow Payload: {cell_data}")
 
     elif P > X and K > X:
         initial_payload_length = M
         remaining_bytes = P - M
-        adjusted_initial_payload_length = initial_payload_length - header_length
-        initial_payload = cell_data[offset:offset + adjusted_initial_payload_length + 4]
-        cell_data = handle_overflow(initial_payload, cell_offset, page_size, filesource, adjusted_initial_payload_length, remaining_bytes)
+        initial_payload = cell_data[offset : offset + initial_payload_length + 4]
+        cell_data = handle_overflow(initial_payload, cell_offset, page_size, filesource, initial_payload_length, remaining_bytes)
+        offset = 0
+        #print(f"Overflow Payload: {cell_data}")
 
     elif P <= X:
-        # No overflow handling required
         initial_payload_length = P
+        cell_data = cell_data[offset : offset + initial_payload_length]
+        offset = 0
 
-    # Decode columns
+    # Decode column values
     columns = []
-    for col_type in column_types:
-        column_value, col_length = decode_column_value(col_type, cell_data, offset)
+    for i, col_type in enumerate(column_types):
+        try:
+            column_value, col_length = decode_column_value(col_type, cell_data, offset)
+        except Exception as e:
+            print(f" [!] Failed to decode column {i}: {e}")
+            break
+
         columns.append(column_value)
         offset += col_length
 
@@ -176,7 +182,7 @@ def mainparse_leaf_page(db_file, page_data, current_page, page_size, is_page_1=F
             row_id, columns, cell_offset = parse_cell(cell_data, pointer, page_size, filesource)
             rows.append([cell_offset, row_id, *columns])
         except Exception as e:
-            print(f" [-] Page {current_page}: Error parsing record at page offset {pointer}: {e}")
+            print(f" [-] Page {current_page}: Error parsing record at page offset {pointer}: {str(e).encode('ascii', errors='ignore').decode('ascii')}")
             continue
 
     return rows
@@ -218,7 +224,7 @@ def walparse_leaf_page(wal_file, page_data, page_number, page_size, is_page_1=Fa
             row_id, columns, cell_offset = parse_walcell(cell_data, pointer, page_size, filesource)
             rows.append([cell_offset, row_id, *columns])
         except Exception as e:
-            print(f" [-] Page {current_page}: Error parsing record at page offset {pointer}: {e}")
+            print(f" [-] Page {current_page}: Error parsing record at page offset {pointer}: {str(e).encode('ascii', errors='ignore').decode('ascii')}")
             continue
 
     return rows
@@ -247,7 +253,7 @@ def decode_column_value(col_type, data, offset):
         return 0, 0
     elif col_type == 9:  # Integer 1 
         return 1, 0
-    elif col_type >= 12:  # BLOB
+    elif col_type >= 12 :  # BLOB
         blob_length = (col_type - 12) // 2
         return data[offset:offset + blob_length], blob_length
     elif col_type >= 13:  # Text
