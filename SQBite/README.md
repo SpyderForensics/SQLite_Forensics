@@ -43,3 +43,8 @@ Not Currently Supported:
 Known Issues:
 
 - Overflow Records in the WAL are not completely reconstructed
+
+Beta 2 Bug Fixes:
+
+- Records with overflow in Main Database File are now correctly parsed
+- The column types are now extracted from the original database and are applied when writing the output SQLite Database
