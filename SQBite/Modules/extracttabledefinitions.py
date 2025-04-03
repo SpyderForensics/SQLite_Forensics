@@ -9,19 +9,36 @@ TABLELEAF_PAGE_TYPE = 13
 
 def extract_columns_and_types_from_sql(sql_statement):
     """
-    Extracts column names and types from table CREATE TABLE statement.
+    Extracts column names and types from a CREATE TABLE statement.
     """
     columns = []
     match = re.search(r"CREATE\s+TABLE\s+\S+\s*\((.+)\)", sql_statement, re.S | re.I)
     
     if match:
-        column_definitions = match.group(1).split(",")
-        for col_def in column_definitions:
-            col_parts = col_def.strip().split()
-            if col_parts and col_parts[0].lower() not in ("primary", "foreign", "constraint", "unique", "check"):
-                col_name = col_parts[0].strip("`\"[]()")
-                col_type = col_parts[1].upper() if len(col_parts) > 1 else "TEXT"
-                columns.append((col_name, col_type))
+        column_block = match.group(1)
+        parts = re.findall(r'(?:[^,(]|\([^)]*\))+', column_block)
+
+        for col_def in parts:
+            col_def = col_def.strip()
+            if col_def.upper().startswith(("CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK")):
+                continue
+
+            col_parts = col_def.split()
+            if not col_parts:
+                continue
+
+            col_name = col_parts[0].strip("`\"[]()")
+            type_tokens = []
+
+            for token in col_parts[1:]:
+                token_upper = token.upper()
+                if token_upper in ("NOT", "NULL", "PRIMARY", "KEY", "UNIQUE", "CHECK", "DEFAULT", "COLLATE", "REFERENCES"):
+                    break
+                type_tokens.append(token)
+
+            col_type = " ".join(type_tokens) if type_tokens else "TEXT"
+            columns.append((col_name, col_type))
+    
     return columns
 
 def extract_table_definitions_from_schema(db_file, page_size):

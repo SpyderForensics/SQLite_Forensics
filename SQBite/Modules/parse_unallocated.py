@@ -49,7 +49,7 @@ def extract_printable_from_freelisttrunk(page_data, page_number, frame_number, f
             return "", None
 
         # Calculate end of the freelist array
-        num_entries = struct.unpack('>I', page_data(4-7))[0]
+        num_entries = struct.unpack('>I', page_data[4:8])[0]
         array_end = 8 + num_entries * 4
         unallocated_start = array_end
         unallocated_end = page_size
@@ -66,5 +66,5 @@ def extract_printable_from_freelisttrunk(page_data, page_number, frame_number, f
         return printable_data, unallocated_offset
 
     except Exception as e:
-        print(f"[!] Error extracting from page {page_number} (frame {frame_number}): {e}")
+        print(f" [!] Error extracting from page {page_number}: {e}")
         return "", None

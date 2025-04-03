@@ -137,10 +137,10 @@ def classify_records(output_file):
 
             for non_highest in non_highest_frame_records:
                 non_highest_record_id = non_highest[0]
-                non_highest_row_id = non_highest[7]  
-                non_highest_data = non_highest[7:]  
+                non_highest_row_id = non_highest[8]  
+                non_highest_data = non_highest[8:]  
 
-                corresponding_highest = next((rec for rec in highest_frame_records if rec[7] == non_highest_row_id), None)
+                corresponding_highest = next((rec for rec in highest_frame_records if rec[8] == non_highest_row_id), None)
                 if not corresponding_highest:
                     cursor.execute(f"""
                         UPDATE {table_name} SET record_status = ? WHERE record_id = ?
@@ -150,11 +150,11 @@ def classify_records(output_file):
 
                     continue
 
-                highest_record_data = corresponding_highest[7:] 
+                highest_record_data = corresponding_highest[8:] 
 
                 differences = {}
                 for i, (non_highest_val, highest_val) in enumerate(zip(non_highest_data, highest_record_data)):
-                    column_name = columns[i + 7] 
+                    column_name = columns[i + 8] 
 
                     if non_highest_val == "N/A":
                         non_highest_val = 0

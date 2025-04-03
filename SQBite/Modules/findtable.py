@@ -62,15 +62,20 @@ def traverse_table_btree(db_file, root_page, page_size, table_name):
 
         page_offset = (current_page - 1) * page_size
 
+        #Skips Virtual Tables
+        if root_page == 0:
+            #print(f"[!] Skipping Table: {table_name} - Virtual Table")
+            continue
+        
         try:
             db_file.seek(page_offset)
             page_data = db_file.read(page_size)
         except OSError as e:
-            print(f"[-] Error seeking to offset {page_offset} for page {current_page}: {e}")
+            #print(f"[-] Error seeking to offset {page_offset} for page {current_page}: {e}")
             continue
 
         if len(page_data) != page_size:
-            print(f"[!] Incomplete read for page {current_page} (expected {page_size} bytes, got {len(page_data)} bytes).")
+            #print(f"[!] Incomplete read for page {current_page} (expected {page_size} bytes, got {len(page_data)} bytes).")
             continue
 
         page_type = page_data[0]
@@ -80,8 +85,8 @@ def traverse_table_btree(db_file, root_page, page_size, table_name):
             pages_to_process.extend(child_pages)
         elif page_type == TABLELEAF_PAGE_TYPE:  # Leaf B-tree page
             table_pages.append(current_page)
-        else:
-            print(f"[!] Skipping Table: {table_name} - Might be a WITHOUT ROWID Table")
+        #else:
+            #print(f"[!] Skipping Table: {table_name} - Might be a WITHOUT ROWID Table")
 
     return table_pages
 

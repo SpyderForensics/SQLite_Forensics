@@ -26,18 +26,21 @@ def parse_sqlite_file(db_path):
         auto_vacuum = header["auto_vacuum"]
         first_freelist_trunk = header["first_freelist_trunk_page"]
         total_pages = os.path.getsize(db_path) // page_size
-
+        
+        print(f"[+] Processing Database Schema")
         all_table_pages = parse_db_for_tables(db_file, page_size)
         
-        # Identify freelist pages
-        freelist_pages, freelist_trunk_pages = extract_freelist_pagenumbers(db_file, page_size, first_freelist_trunk) 
-        #print(f"Freelist Pages: {freelist_pages}")
-
         table_pages_map = {}
         for table in all_table_pages:
             for page in table["pages"]:
                 table_pages_map[page] = table["table_name"]
+                
+        print(F"[+] Finished Processing Database Schema\n")
+                
+        # Identify freelist pages
+        freelist_pages, freelist_trunk_pages = extract_freelist_pagenumbers(db_file, page_size, first_freelist_trunk)
 
+        # Identify freelist pages
         pointer_pages = calculate_pointer_pages(auto_vacuum, page_size, total_pages)
 
         records = []
@@ -60,14 +63,14 @@ def parse_sqlite_file(db_path):
             page_type = page_data[0]
             
             # Parse unallocated space from freelist trunk pages
-            if page_number == first_freelist_trunk or page_number in freelist_trunk_pages:
+            if page_number in freelist_trunk_pages:
                 print(f"[!] Processing Page {page_number}: Freelist Trunk Page - Unallocated Space Only")
                 unallocated, unallocated_offset = extract_printable_from_freelisttrunk(page_data, page_number, 0, file_offset_for_page)
                 if unallocated:
                     recovered_records.append((os.path.basename(db_path), "N/A", page_number, "Freelist Trunk Page", freetable_name, "Page Unallocated Space", unallocated_offset, unallocated))            
             
             #Parses Freelist Pages
-            if page_number in freelist_pages:
+            elif page_number in freelist_pages:
                 # Parse unallocated space from Table Interior freelist pages
                 if page_type == TABLEINTERIOR_PAGE_TYPE:
                     print(f"[!] Processing Page {page_number}: Freelist - Table Interior Page - Unallocated Space Only")
@@ -113,6 +116,12 @@ def parse_sqlite_file(db_path):
                     unallocated, unallocated_offset = extract_printable_from_unallocated(page_data, page_number, 0, file_offset_for_page)
                     if unallocated:
                         recovered_records.append((os.path.basename(db_path), "N/A", page_number, "Freelist Index Leaf", freetable_name, "Page Unallocated Space", unallocated_offset, unallocated))
+                        
+                elif page_type == 0:
+                    if all(b == 0 for b in page_data):
+                        print(f"[!] Skipping Page {page_number}: Freelist Empty Page")
+                    else:
+                        print(f"[!] Skipping Page {page_number}: Freelist Overflow Page")
 
             # Parse unallocated space from table interior pages
             elif page_type == TABLEINTERIOR_PAGE_TYPE:

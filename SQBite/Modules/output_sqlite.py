@@ -34,7 +34,6 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
         page_size = header["page_size"]
         tables = extract_table_definitions_from_schema(db_file, page_size)
 
-    # Use (name, type) pairs for each table
     table_columns = {table["name"]: table["columns"] for table in tables}
 
     conn = sqlite3.connect(output_file)
@@ -61,22 +60,36 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
                 unique_column_headers.append(col_clean)
                 added.add(col_clean)
 
-        # Set Record_ID as INTEGER PRIMARY KEY
-        column_definitions = ['"Record_ID" INTEGER PRIMARY KEY']
+        column_definitions = [
+            '"Record_ID" INTEGER PRIMARY KEY',
+            '"Source_File" TEXT',
+            '"Frame_Number" INTEGER',
+            '"Page_Number" INTEGER',
+            '"Record_Status" TEXT',
+            '"Table_Name" TEXT',
+            '"File_Offset" INTEGER',
+            '"Row_ID" INTEGER'
+        ]
+        
         for col_name in unique_column_headers:
-            if col_name == "Record_ID":
+            if col_name in {"Record_ID", "Source_File", "Frame_Number", "Page_Number", "Record_Status", "Table_Name", "File_Offset", "Row_ID"}:
                 continue
-            # Use actual column type if available
             col_type = next((ctype for cname, ctype in extracted_columns if cname == col_name), "TEXT")
             column_definitions.append(f'"{col_name}" {col_type}')
 
-        cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(column_definitions)})')
+        
+        if len(column_definitions) <= 1:
+            print(f"[!] Skipping creation of Table '{table_name}' due to missing valid columns. Definitions: {column_definitions}")
+            continue
+
+        create_table = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(column_definitions)})'
+
+        cursor.execute(create_table)
 
     conn.commit()
-
     # Track max columns for dynamic/freelist/unknown
-    max_columns = max((len(clean_row(row)) - len(base_headers)) for row in combined_records)
-
+    max_columns = max((len(clean_row(row)) + 1 - len(base_headers)) for row in combined_records)
+    #print(f"[DEBUG] Max columns calculated for dynamic columns: {max_columns}")
     dynamic_columns = [f"Column_{i+1}" for i in range(max_columns)]
 
     for row in combined_records:
@@ -102,7 +115,7 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
             existing_columns = {row[1] for row in cursor.fetchall()}
             missing_columns = set(column_headers) - existing_columns
             for column in missing_columns:
-                cursor.execute(f'ALTER TABLE "Freelist" ADD COLUMN "{column}" TEXT')
+                cursor.execute(f'ALTER TABLE "Freelist" ADD COLUMN "{column}" BLOB')
 
         # Special handling of unknown table or mismatched schema
         elif table_name not in table_columns or len(cleaned_row) > len(table_columns[table_name]) + len(base_headers):   
@@ -116,7 +129,7 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
             existing_columns = {row[1] for row in cursor.fetchall()}
             missing_columns = set(column_headers) - existing_columns
             for column in missing_columns:
-                cursor.execute(f'ALTER TABLE "Unknown" ADD COLUMN "{column}" TEXT')
+                cursor.execute(f'ALTER TABLE "Unknown" ADD COLUMN "{column}" BLOB')
 
         else:
             extracted_columns = table_columns[table_name]
@@ -140,9 +153,25 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
             print(f"[-] Error inserting into {table_name}: {e}")
             continue
 
-    # Create the Recovered_Records table
-    recovered_definitions = '"Record_ID" INTEGER PRIMARY KEY, ' + ", ".join([f'"{col}" TEXT' for col in recovered_headers])
-    cursor.execute(f'CREATE TABLE IF NOT EXISTS "Recovered_Records" ({recovered_definitions})')
+    recovered_column_names = [
+        "Record_ID", "Source_File", "Frame_Number", "Page_Number",
+        "Page_Type", "Table_Name", "Record_Status", "File_Offset", "Recovered Data"
+    ]
+
+    recovered_column_defs = [
+        '"Record_ID" INTEGER PRIMARY KEY',
+        '"Source_File" TEXT',
+        '"Frame_Number" INTEGER',
+        '"Page_Number" INTEGER',
+        '"Page_Type" TEXT',
+        '"Table_Name" TEXT',
+        '"Record_Status" TEXT',
+        '"File_Offset" INTEGER',
+        '"Recovered Data" TEXT'
+    ]
+
+    recovered_definitions_str = ", ".join(recovered_column_defs)
+    cursor.execute(f'CREATE TABLE IF NOT EXISTS "Recovered_Records" ({recovered_definitions_str})')
 
     # Insert records into Recovered_Records table
     for row in combined_recoveredrecords:
@@ -157,7 +186,7 @@ def write_to_sqlite(output_file, db_file_path, combined_records, combined_recove
         if table_name.lower() in sqlite_internal_tables:
             continue
 
-        insert_columns = [col for col in recovered_headers if col != "Record_ID"]  
+        insert_columns = [col for col in recovered_column_names if col != "Record_ID"]  
         insert_columns = [col.strip("'\"") for col in insert_columns]
 
         expected_column_count = len(insert_columns)
