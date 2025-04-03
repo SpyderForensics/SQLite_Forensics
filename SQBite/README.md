@@ -48,3 +48,13 @@ Beta 2 Bug Fixes:
 
 - Records with overflow in Main Database File are now correctly parsed
 - The column types are now extracted from the original database and are applied when writing the output SQLite Database
+
+Beta 3 Changes:
+
+- Beta 2 overflow record code worked in some scenarioes but no other. The new version has a temporary fix so overflow records in Main Database File are now correctly parsed
+- Fixed an issue when the column type was not declared in the original database
+- If there is an error creating a table in the output the table and sql language is printed to the console (i.e Virtual Tables)
+- Additional Print Statements and some other visual changes
+- InstaSearch now searches BLOB fields
+- InstaSearch now ignores columns created by SQBite in the output database
+- Small Changes to the InstaSearch output text file to make it easier to read
