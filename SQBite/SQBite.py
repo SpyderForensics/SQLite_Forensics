@@ -19,6 +19,7 @@
 # v alpha 2025-01-09
 # v beta 2025-03-28
 # v beta 2 2025-03-29
+# v beta 3 2025-04-03 
 
 
 import os
@@ -43,7 +44,7 @@ def _main(db_file, wal_file, output_folder, search_term):
                                                 ,'`-./_____\,-'`.
 Chomping SQLite Databases One Page at a time        /       \
 
-Version: Beta 2 - March, 2025
+Version: Beta 3 April, 2025
 Author: Spyder Forensics Training
 Website: www.spyderforensics.com
 
@@ -68,12 +69,11 @@ Not Currently Supported:
 Known Issues:
 
 - Overflow Records in the WAL are not completely reconstructed
-.
 """)
 
     start_time = datetime.datetime.now()
       
-    print(f"Database Analysis Started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    print(f"Database Analysis Started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     db_records, db_recoveredrecords = parse_sqlite_file(db_file)
 
