@@ -35,41 +35,6 @@ def classify_records(output_file):
                 highest_frame_numbers[page_number] = frame_number
             else:
                 highest_frame_numbers[page_number] = max(highest_frame_numbers[page_number], frame_number)
-
-    for table in tables:
-        table_name = table[0]
-
-        if table_name.lower() in ["unknown", "freelist", "recovered_records"]:
-            continue
-
-        cursor.execute(f"PRAGMA table_info('{table_name}')")
-        columns = [col[1].lower() for col in cursor.fetchall()] 
-
-        if "record_status" not in columns or "frame_number" not in columns or "page_number" not in columns:
-            continue
-
-        for page_number, highest_frame in highest_frame_numbers.items():
-            if highest_frame == 0:
-                cursor.execute(f"""
-                    SELECT record_id, frame_number FROM {table_name}
-                    WHERE page_number = ? AND frame_number = 'N/A'
-                """, (page_number,))
-            else:
-                cursor.execute(f"""
-                    SELECT record_id, frame_number FROM {table_name}
-                    WHERE page_number = ? AND frame_number = ?
-                """, (page_number, highest_frame))
-
-            rows_to_update = cursor.fetchall()
-
-            #print(f"[+] Found {len(rows_to_update)} records for page_number {page_number} with frame_number {highest_frame}")
-
-            for row in rows_to_update:
-                record_id = row[0]
-
-                cursor.execute(f"""
-                    UPDATE {table_name} SET record_status = ? WHERE record_id = ?
-                """, ("Active", record_id))
                 
     for table in tables:
         table_name = table[0]
@@ -137,10 +102,10 @@ def classify_records(output_file):
 
             for non_highest in non_highest_frame_records:
                 non_highest_record_id = non_highest[0]
-                non_highest_row_id = non_highest[8]  
+                non_highest_row_id = non_highest[7]  
                 non_highest_data = non_highest[8:]  
 
-                corresponding_highest = next((rec for rec in highest_frame_records if rec[8] == non_highest_row_id), None)
+                corresponding_highest = next((rec for rec in highest_frame_records if rec[7] == non_highest_row_id), None)
                 if not corresponding_highest:
                     cursor.execute(f"""
                         UPDATE {table_name} SET record_status = ? WHERE record_id = ?
@@ -171,14 +136,14 @@ def classify_records(output_file):
                         UPDATE {table_name} SET record_status = ? WHERE record_id = ?
                     """, ("Modified/Reused ID", non_highest_record_id)) 
 
-                    # print(f"Updated record_id {non_highest_record_id} to 'Modified/Reused' due to differences.")
+                    #print(f"Updated record_id {non_highest_record_id} to 'Modified/Reused ID' due to differences.")
 
                 else:
                     cursor.execute(f"""
                         UPDATE {table_name} SET record_status = ? WHERE record_id = ?
                     """, ("Duplicate (Active)", non_highest_record_id))
 
-                    # print(f"Updated record_id {non_highest_record_id} to 'Old Version' (no differences).")
+                    #print(f"Updated record_id {non_highest_record_id} to 'Duplicate (Active)' (no differences).")
 
     conn.commit()
     conn.close()
