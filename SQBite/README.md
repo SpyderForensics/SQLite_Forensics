@@ -32,7 +32,7 @@ Usage:
 -c Record Classification (optional)
 -s Keyword to Search
 
-Example usage: python SQBite.py -i Evidence\Photos.sqlite -w Evidence\Photos.sqlite-wal -o PhotosDatabaseExtraction -c -k Spyder
+Example usage: python SQBite.py -i Evidence\Photos.sqlite -w Evidence\Photos.sqlite-wal -o PhotosDatabaseExtraction -c -s Spyder
 
 Not Currently Supported: 
 
