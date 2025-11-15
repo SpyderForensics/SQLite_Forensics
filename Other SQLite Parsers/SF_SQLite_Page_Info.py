@@ -1,8 +1,7 @@
 #This python script extracts information about each page in an 
 #SQLite Main database file and can export the information into a CSV file
 #
-#
-#Copyright(C) 2024 Spyder Forensics LLC (www.spyderforensics.com)
+#Copyright(C) 2025 Spyder Forensics LLC (www.spyderforensics.com)
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU General Public License as published by
@@ -18,20 +17,46 @@
 #
 # Version History:
 # v1.0 2024-05-28
+# v1.1 2025-11-15
+#   - Removed PrettyTable Module
 
 import argparse
 import os
 import struct
-import textwrap
 import csv
 import logging
 import math
-from prettytable import PrettyTable
 
 #This function creates a logger
 def setup_logger(filename):
-    logging.basicConfig(filename=filename, level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S %Z (UTC %z)')
+    logging.basicConfig(
+        filename=filename,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S %Z (UTC %z)'
+    )
     return logging.getLogger()
+
+def print_table_console(rows):
+    """ This function formats the table in the console"""
+
+    headers = ["Page Number", "File Offset", "Page Flag", "Page Type"]
+    widths = [12, 14, 10, 40]
+
+    line = ""
+    for h, w in zip(headers, widths):
+        line += h.ljust(w)
+    print(line)
+    print("-" * sum(widths))
+
+    for row in rows:
+        page_number, file_offset, page_flag, page_type = row
+        line = ""
+        line += str(page_number).ljust(widths[0])
+        line += str(file_offset).ljust(widths[1])
+        line += str(page_flag).ljust(widths[2])
+        line += str(page_type).ljust(widths[3])
+        print(line)
 
 #This function iterates through every page in the main database file and determines what type of page it is
 #Todo: Add an elif to identify lock byte pages, currently will be returned as an unknown page type. A single lock byte page is present in the database when the database file is greater than 1 GB  
@@ -103,15 +128,14 @@ def read_page(file, page_size, auto_vacuum, first_freelist_trunk, freelist_trunk
         yield (page_number, page_flag, page_type)
 
 #This function calculates the page number for all pointer map pages.
-def calculate_pointermappages (auto_vacuum, page_size, total_pages):
+def calculate_pointermappages(auto_vacuum, page_size, total_pages):
     pointer_pages = []
     #Checks if auto_vaccum is enabled
-    if auto_vacuum > 0 :
-        #Variable to store the list of pointer map pages
+    if auto_vacuum > 0:
         #Sets the pointer counter at 1 as we known the first pointer map
         pointer_counter = 1
         #Calulates the number of 5-byte entries that can be stored on the page
-        pointer_entries = math.floor(page_size/5)
+        pointer_entries = math.floor(page_size / 5)
         #Sets pointer number to 0
         pointer_number = 0
         #While the pointer_number is less than or equal to the total number of pages in the database do this
@@ -119,7 +143,7 @@ def calculate_pointermappages (auto_vacuum, page_size, total_pages):
             #Calculates the pointer number
             pointer_number = ((pointer_entries * pointer_counter) + 2 + pointer_counter)
             #Breaks the loop when the pointer_number is greater than total pages.
-            #Added this due to some wierd anonmaly where the last pointer number generated was higher than the total_pages
+            #Added this due to some wierd anomaly where the last pointer number generated was higher than the total_pages
             if pointer_number > total_pages:
                 break
             #Adds the pointer number to the Pointer Page list
@@ -127,9 +151,7 @@ def calculate_pointermappages (auto_vacuum, page_size, total_pages):
             #Increments the pointer counter before the loop
             pointer_counter += 1
     return pointer_pages
-            
-        
-    
+
 #This function iterates through each freelist trunk page and extracts the freelist page numbers
 def extract_freelist_pagenumbers(file, page_size, first_freelist_trunk):
     #Variable to store the list of freelist page numbers 
@@ -170,13 +192,14 @@ def header_info(file, header_data):
     #While I was testing various databases, I happened to find a database where auto vacuum was enabled and the database size from the header was zero even though it had 4942 pages (really wierd). I added an if statement where it will calculate the number of pages in database by seeking to the end of the file then dividing the number of bytes by the page size.
     if database_size == 0:
         file.seek(0, 2)
-        total_pages = file.tell()/page_size
-    else: total_pages = database_size    
+        total_pages = file.tell() / page_size
+    else:
+        total_pages = database_size    
     # Determine the freelist trunk page if it exists
     first_freelist_trunk = struct.unpack('>i', header_data[32:36])[0]
     # Determine if auto vacuum is enabled
     auto_vacuum = struct.unpack('>i', header_data[52:56])[0]              
-    return page_size, total_pages, first_freelist_trunk, auto_vacuum, 
+    return page_size, total_pages, first_freelist_trunk, auto_vacuum
 
 def main(db_file, output_file):
     try:
@@ -194,6 +217,7 @@ def main(db_file, output_file):
                 print(f"Error: '{db_file}' is not a valid SQLite database file.")
                 logger.error(f"Error: '{db_file}' is not a valid SQLite database file.")
                 return                       
+
             file.seek(0)
             #Reads the header data
             header_data = file.read(100)
@@ -202,8 +226,10 @@ def main(db_file, output_file):
                 print("Error: Unable to determine page size.")
                 logger.error("Error: Unable to determine page size.")
                 return
-            pointer_pages = calculate_pointermappages(auto_vacuum, page_size, total_pages)               
+
+            pointer_pages, = (calculate_pointermappages(auto_vacuum, page_size, total_pages),)
             freelist_pages, freelist_trunk_pages = extract_freelist_pagenumbers(file, page_size, first_freelist_trunk)
+
             file.seek(0)
             print(r"""
    _____                 _             ______                       _          
@@ -216,42 +242,40 @@ def main(db_file, output_file):
         |_|    |___/    
 
 SQLite Page Information Extractor
-Version: 1.0 May, 2024
+Version: 1.1 Nov, 2025
 Author: Spyder Forensics Training
 Website: www.spyderforensics.com
 """)
-            print(f"{os.path.basename(db_file)} Page Information")
-            #Creates a Pretty Table which is displayed in the console
-            table = PrettyTable(["Page Number", "File Offset", "Page Flag", "Page Type"])
-            table.align = 'l'
+            print(f"{os.path.basename(db_file)} Page Information\n")
+
+            rows = []
             file_offset = 0
             for page_number, page_flag, page_type in read_page(file, page_size, auto_vacuum, first_freelist_trunk, freelist_trunk_pages, freelist_pages, pointer_pages):
-                table.add_row([page_number, file_offset, page_flag, page_type])
+                rows.append([page_number, file_offset, page_flag, page_type])
                 file_offset += page_size  # Increments file offset by page size
-            #Stores the table information without any formatting so it can be used in the CSV output
-            rows_without_wrapping = []
-            for row in table._rows:
-                row_values = [str(col).strip() if isinstance(col, str) else col for col in row]
-                rows_without_wrapping.append(row_values)
-            print(table)
-            #If the -o switch is used the information from the pretty table is exported to a csv file. The pretty table formatting is ignored
+
+            # Console output
+            print_table_console(rows)
+
+            # CSV output
             if output_file:
                 output_path = os.path.abspath(output_file)
                 with open(output_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
                     writer = csv.writer(csvfile)
                     writer.writerow(["Page Number", "File Offset", "Page Flag", "Page Type"])
-                    for row in rows_without_wrapping:
+                    for row in rows:
                         writer.writerow(row)
+
                 print("Analysis of All Pages Complete!")
                 logger.info("Analysis of All Pages Complete")
                 print(f"SQLite Page Information for {os.path.basename(db_file)} successfully exported to:{output_path}")
                 logger.info(f"SQLite Page Information {os.path.basename(db_file)} successfully exported to:{output_path}")
-                
             else:
-                print("Analysis of All Pages Complete!")
+                print("\nAnalysis of All Pages Complete!")
                 logger.info("Analysis of All Pages Complete")
                 print("Use the '-o' switch to output the header information to a CSV file.")
                 logger.info("No output file provided. Use the '-o' switch to output the SQLite Page Information to a CSV file.")
+
     except FileNotFoundError:
         print(f"Error: Unable to open the specified file '{db_file}'")
         logger.error(f"Error: Unable to open the specified file '{db_file}'")
@@ -263,6 +287,7 @@ Usage = "Usage Example: SF_Page_Info_Parser.py -i C:\\Evidence\\mmssms.db -o C:\
 parser = argparse.ArgumentParser(description=f"{tool_name}\n{description}\n", epilog=Usage, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument('-i', dest='db_file', metavar='file_path', required=True, help='Enter the Path to SQLite Main Database File')
 parser.add_argument('-o', dest='output_file', metavar='output_file', help='Specify the location to output the CSV file including name')
+
 args = parser.parse_args()
 logger = setup_logger(f"{os.path.splitext(args.output_file)[0]}.log") if args.output_file else setup_logger("Spyder_SQLitePageInfo.log")
 main(args.db_file, args.output_file)
